@@ -4,3 +4,14 @@
 # 课程文档
 *.docx
 *.docx.txt
+
+# Python
+__pycache__/
+*.egg-info/
+.venv/
+
+# Secrets
+.env
+bugdoctor/config.yaml
+bugdoctor/config.local.yaml
+.bugdoctor/
