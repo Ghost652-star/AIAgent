@@ -1,0 +1,6 @@
+# Claude
+.claude/
+
+# 课程文档
+*.docx
+*.docx.txt
