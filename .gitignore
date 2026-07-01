@@ -19,3 +19,5 @@ bugdoctor/config.local.yaml
 
 # 测试样本
 samples/
+output/
+CLAUDE.md
