@@ -16,3 +16,6 @@ __pycache__/
 bugdoctor/config.yaml
 bugdoctor/config.local.yaml
 .bugdoctor/
+
+# 测试样本
+samples/

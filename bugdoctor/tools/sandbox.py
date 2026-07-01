@@ -2,6 +2,22 @@ from __future__ import annotations
 
 from pathlib import Path
 
+SKIP_DIRS = frozenset({
+    ".git",
+    ".venv",
+    "node_modules",
+    "__pycache__",
+    ".idea",
+    ".tox",
+    ".mypy_cache",
+    "vendor",
+    ".bugdoctor",
+})
+
+
+def should_skip_path(path: Path) -> bool:
+    return any(part in SKIP_DIRS for part in path.parts)
+
 
 def resolve_in_project(project_root: Path, file_path: str) -> tuple[Path | None, str]:
     """路径解析 + 沙箱检查——禁止访问 project_root 以外的路径"""

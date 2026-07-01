@@ -20,6 +20,25 @@ def _preview(text: str, max_len: int = 400) -> str:
     return text[:max_len] + "..."
 
 
+def _read_user_input() -> str:
+    """Read one user message; supports multi-line paste (empty line to send)."""
+    lines: list[str] = []
+    while True:
+        prefix = "you> " if not lines else "... "
+        try:
+            line = input(prefix)
+        except EOFError:
+            break
+        if line.strip() == "" and lines:
+            break
+        if line.strip() == "" and not lines:
+            continue
+        lines.append(line.rstrip("\r\n"))
+        if len(lines) == 1 and lines[0].strip().lower() in {"quit", "exit", "q"}:
+            break
+    return "\n".join(lines).strip()
+
+
 async def run_app(project: Path, config_path: Path | None = None) -> None:
     config = load_config(project, config_path)
 
@@ -44,12 +63,13 @@ async def run_app(project: Path, config_path: Path | None = None) -> None:
     print(f"BugDoctor — model: {config.llm.model}")
     print(f"Project: {config.project_root}")
     print(f"Tools: {', '.join(registry.list_names())}")
-    print("Paste an error or describe a bug. Type quit to exit.\n")
+    print("Paste an error or describe a bug. Multi-line: paste, then press Enter on an empty line to send.")
+    print("Type quit to exit.\n")
 
     while True:
         try:
-            user_input = input("you> ").strip()
-        except (EOFError, KeyboardInterrupt):
+            user_input = _read_user_input()
+        except KeyboardInterrupt:
             print("\nBye.")
             break
 

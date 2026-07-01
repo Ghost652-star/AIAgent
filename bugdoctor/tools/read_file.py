@@ -6,6 +6,7 @@ from typing import Any
 from pydantic import BaseModel, Field
 
 from bugdoctor.tools.base import Tool, ToolResult
+from bugdoctor.tools.read_tracker import ReadTracker
 from bugdoctor.tools.sandbox import resolve_in_project
 
 
@@ -26,8 +27,9 @@ class ReadFileTool(Tool):
     params_model = ReadFileParams
     risk = "read"
 
-    def __init__(self, project_root: Path) -> None:
+    def __init__(self, project_root: Path, read_tracker: ReadTracker | None = None) -> None:
         self._project_root = project_root
+        self._read_tracker = read_tracker
 
     async def execute(self, arguments: dict[str, Any]) -> ToolResult:
         params = ReadFileParams.model_validate(arguments)
@@ -54,6 +56,9 @@ class ReadFileTool(Tool):
         end = start + max(params.limit, 1)
         selected = lines[start:end]
         numbered = [f"{i + start + 1}\t{line}" for i, line in enumerate(selected)]
+        if self._read_tracker is not None:
+            self._read_tracker.mark_read(resolved)
+
         header = f"File: {resolved.relative_to(self._project_root.resolve())} (lines {start + 1}-{min(end, len(lines))} of {len(lines)})"
         body = "\n".join(numbered) if numbered else "(empty slice)"
         return ToolResult(f"{header}\n{body}")

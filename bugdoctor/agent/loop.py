@@ -60,7 +60,7 @@ AgentEvent = StreamText | ToolUseEvent | ToolResultEvent | TurnComplete | ErrorE
 
 
 class Agent:
-    """ReAct Agent —— 替代 ChatSession，从一问一答升级为多轮工具调用"""
+    
 
     def __init__(
         self,
