@@ -16,6 +16,12 @@ __pycache__/
 bugdoctor/config.yaml
 bugdoctor/config.local.yaml
 .bugdoctor/
+# 允许提交默认/自定义 Skill（与 memory、sessions 分离；sessions/memory 仍忽略）
+!.bugdoctor/skills/
+!.bugdoctor/skills/**
+!.bugdoctor/config.example.yaml
+.bugdoctor/config.local.yaml
+.bugdoctor/config.yaml
 
 # 测试样本与本地测试项目（不提交）
 tests/

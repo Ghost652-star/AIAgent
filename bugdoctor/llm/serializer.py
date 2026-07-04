@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from typing import Any
 
 from bugdoctor.conversation.models import Message
@@ -33,7 +34,7 @@ def build_chat_completion_messages(
                     "type": "function",
                     "function": {
                         "name": tu.tool_name,
-                        "arguments": __import__("json").dumps(tu.arguments, ensure_ascii=False),
+                        "arguments": json.dumps(tu.arguments),
                     },
                 }
                 for tu in msg.tool_uses

@@ -69,9 +69,12 @@ class ToolRegistry:
         """按名称查找工具"""
         return self._tools.get(name)
 
-    def get_schemas(self) -> list[dict[str, Any]]:
-        """收集所有工具的 schema → 传给 LLM"""
-        return [t.get_schema() for t in self._tools.values()]
+    def get_schemas(self, allowed: set[str] | None = None) -> list[dict[str, Any]]:
+        """收集工具的 schema → 传给 LLM。allowed 为 None 时不限制。"""
+        tools = self._tools.values()
+        if allowed is not None:
+            tools = [t for t in tools if t.name in allowed]
+        return [t.get_schema() for t in tools]
 
     def list_names(self) -> list[str]:
         """列出所有已注册工具名称"""

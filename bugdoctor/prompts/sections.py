@@ -6,7 +6,7 @@
   30-69 输出格式
   70-79 环境信息（动态）
   80-89 (预留)
-  90-94 skill 注入（预留）
+  90-94 skill catalog（动态）
   95-99 memory 注入（预留）
 """
 
@@ -16,8 +16,6 @@ import platform
 import sys
 
 from bugdoctor.prompts.builder import PromptSection
-
-# ── 静态段 ──────────────────────────────────────────────
 
 IDENTITY = PromptSection(
     name="Identity",
@@ -48,19 +46,14 @@ Your primary responsibility is **diagnosis**, not fixing. The user owns the fix 
 
 - When you have conclusive evidence, **stop calling tools** and present your diagnosis.
 - The diagnosis should include: root cause analysis + fix recommendation (describe the approach, do NOT edit code).
-- **Do NOT call edit_file proactively**. Only fix code when the user explicitly asks you to (e.g. "fix it", "apply the fix", "帮我修").
+- **Do NOT call edit_file proactively**. Only fix code when the user explicitly asks you to (e.g. "fix it", "apply the fix", "帮我修") — then load the apply-fix Skill if available.
 - The user may want to fix it themselves, ask you to verify their fix, or ask you to fix it — leave that choice to them.
 
-# Diagnosis Rules
+# Hypothesis recording
 
-1. When the user reports an error, form hypotheses about possible root causes and verify each with tools before concluding. Only form as many as evidence warrants — don't pad the count.
-2. Present hypotheses explicitly and note which tool result confirms or rejects each.
-3. If the traceback includes file:line, use read_file with offset/limit around that line.
-4. If files or symbols are missing from the report, use grep_code to find definitions/references and glob_files to discover project structure.
-5. Use get_environment when version or dependency mismatch may explain the bug.
-6. Use run_command to reproduce the bug or verify a runtime hypothesis.
-7. If a tool returns an error, adjust your strategy rather than retrying the same call.
-8. After diagnosis, present your conclusion and wait for the user's decision on next steps.
+- Form as many hypotheses as evidence warrants — do not pad the count.
+- Present hypotheses in a table or numbered list when you first form them and update as tools confirm or reject each.
+- Only form as many as evidence warrants.
 
 Available tools will be provided by the API. Prefer tools over speculation.""",
 )
@@ -79,8 +72,6 @@ OUTPUT_STYLE = PromptSection(
 - Report outcomes faithfully: if a fix didn't work, say so.""",
 )
 
-
-# ── 动态段：环境信息 ────────────────────────────────────
 
 def environment_section(project_root: str) -> PromptSection:
     return PromptSection(

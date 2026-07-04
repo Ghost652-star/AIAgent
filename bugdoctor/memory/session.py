@@ -142,7 +142,7 @@ class SessionStore:
             "message_count": 0,
         }
         self._meta_path(session_id).write_text(
-            json.dumps(meta, ensure_ascii=False, indent=2),
+            json.dumps(meta, indent=2),
             encoding="utf-8",
         )
         self._jsonl_path(session_id).touch()
@@ -229,7 +229,7 @@ class SessionStore:
         path = self._jsonl_path(session_id)
         record = compact_boundary_dict(summary, keep_count)
         with path.open("a", encoding="utf-8") as fh:
-            fh.write(json.dumps(record, ensure_ascii=False) + "\n")
+            fh.write(json.dumps(record) + "\n")
 
     def append_messages(self, session_id: str, messages: list[Message]) -> None:
         if not messages:
@@ -237,7 +237,7 @@ class SessionStore:
         path = self._jsonl_path(session_id)
         with path.open("a", encoding="utf-8") as fh:
             for msg in messages:
-                fh.write(json.dumps(message_to_dict(msg), ensure_ascii=False) + "\n")
+                fh.write(json.dumps(message_to_dict(msg)) + "\n")
         self._touch_meta(session_id, new_messages=messages)
 
     def _touch_meta(self, session_id: str, new_messages: list[Message]) -> None:
@@ -263,7 +263,7 @@ class SessionStore:
                     meta["title"] = _session_title(msg.content)
                     break
 
-        meta_path.write_text(json.dumps(meta, ensure_ascii=False, indent=2), encoding="utf-8")
+        meta_path.write_text(json.dumps(meta, indent=2), encoding="utf-8")
 
 
 def _messages_after_index(lines: list[str], boundary_idx: int) -> list[Message]:

@@ -25,3 +25,6 @@ compact_llm:
 compact_threshold: 8000
 
 max_agent_iterations: 30
+
+# MCP 配置请写在应用根目录 .bugdoctor/config.yaml（与 skills、memory 同级）
+# 参见 .bugdoctor/config.example.yaml

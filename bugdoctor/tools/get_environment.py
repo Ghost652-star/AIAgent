@@ -31,11 +31,9 @@ class GetEnvironmentParams(BaseModel):
 class GetEnvironmentTool(Tool):
     name = "get_environment"
     description = (
-        "Collect structured environment info: platform, interpreter version, and dependency files "
-        "(requirements.txt, pyproject.toml, pom.xml, etc.). "
-        "Use when the user did not provide environment details or a bug may involve version/dependency mismatch. "
-        "Prefer this over run_command for environment overview. "
-        "Use run_command only for reproducing the actual failing script."
+        "Collect structured environment info: platform, interpreter version, dependency "
+        "file previews, and optional pip list snippet. Use when checking version/dependency "
+        "issues before blaming application code."
     )
     params_model = GetEnvironmentParams
     risk = "read"
@@ -62,11 +60,17 @@ class GetEnvironmentTool(Tool):
                 parts.append(f"java -version:\n{java_ver}")
 
         dep_section = self._read_dependency_files(root)
-        if dep_section:
-            parts.append("Dependency files:")
-            parts.append(dep_section)
-        else:
-            parts.append("Dependency files: (none found)")
+        parts.append("Dependency files:")
+        parts.append(dep_section if dep_section else "  (none found)")
+
+        pip_list = await self._run_command("pip list --format=freeze", timeout=20)
+        if pip_list:
+            lines = pip_list.splitlines()
+            preview = lines[:40]
+            body = "\n".join(f"  {line}" for line in preview)
+            suffix = f"\n  ... ({len(lines) - 40} more packages)" if len(lines) > 40 else ""
+            parts.append("Installed packages (pip list snippet):")
+            parts.append(body + suffix)
 
         return ToolResult("\n".join(parts))
 
@@ -93,11 +97,15 @@ class GetEnvironmentTool(Tool):
                 continue
             preview = lines[:MAX_FILE_LINES]
             body = "\n".join(f"    {line}" for line in preview)
-            suffix = f"\n    ... ({len(lines) - MAX_FILE_LINES} more lines)" if len(lines) > MAX_FILE_LINES else ""
+            suffix = (
+                f"\n    ... ({len(lines) - MAX_FILE_LINES} more lines)"
+                if len(lines) > MAX_FILE_LINES
+                else ""
+            )
             blocks.append(f"  {name}:\n{body}{suffix}")
         return "\n".join(blocks)
 
-    async def _run_command(self, command: str) -> str:
+    async def _run_command(self, command: str, timeout: float = 15) -> str:
         try:
             proc = await asyncio.create_subprocess_shell(
                 command,
@@ -105,7 +113,7 @@ class GetEnvironmentTool(Tool):
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.STDOUT,
             )
-            stdout, _ = await asyncio.wait_for(proc.communicate(), timeout=15)
+            stdout, _ = await asyncio.wait_for(proc.communicate(), timeout=timeout)
         except (asyncio.TimeoutError, OSError):
             return ""
         return stdout.decode(errors="replace").strip()
