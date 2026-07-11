@@ -6,11 +6,18 @@ from __future__ import annotations
 import uuid
 from collections.abc import AsyncIterator
 from dataclasses import dataclass
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 from bugdoctor.conversation.manager import ConversationManager
 from bugdoctor.conversation.models import ToolResultBlock, ToolUseBlock
 from bugdoctor.context.compact import CompactEvent as CompactResult, auto_compact
+from bugdoctor.context.tool_budget import (
+    ToolBudgetState,
+    budget_tool_results,
+    snip_stale_tool_results,
+    tool_results_dir,
+)
 from bugdoctor.llm.client import LLMClient
 from bugdoctor.llm.events import TextDelta, ToolCallComplete
 from bugdoctor.tools.base import ToolRegistry
@@ -78,6 +85,9 @@ class Agent:
         compact_client: LLMClient | None = None,
         compact_threshold: int = 0,
         skill_manager: SkillManager | None = None,
+        *,
+        session_id: str | None = None,
+        data_root: Path | None = None,
     ) -> None:
         self.client = client
         self.registry = registry
@@ -87,6 +97,10 @@ class Agent:
         self.compact_client = compact_client
         self.compact_threshold = compact_threshold
         self.skill_manager = skill_manager
+        self._tool_budget_state = ToolBudgetState()
+        self._tool_results_dir: Path | None = None
+        if session_id and data_root is not None:
+            self._tool_results_dir = tool_results_dir(data_root, session_id)
 
     def _tool_schemas(self) -> list[dict]:
         names = self.registry.list_names()
@@ -127,7 +141,11 @@ class Agent:
             self.conversation.add_system_reminder(memory_reminder)
 
         for _ in range(self.max_iterations):  # 代码只控制轮数上限，每轮做什么由 LLM 决定
-            # ── 0. Auto-compact：每次 LLM 调用前检查上下文 ──
+            # ── 0a. Layer 1：裁剪旧 tool_result（零 LLM）──
+            if self._tool_results_dir is not None:
+                snip_stale_tool_results(self.conversation.history)
+
+            # ── 0b. Layer 2：超阈值时 LLM 摘要压缩 ──
             if self.compact_client and self.compact_threshold > 0:
                 result = await auto_compact(
                     self.conversation,
@@ -193,6 +211,14 @@ class Agent:
                     )
                 results.append(block)
                 yield ToolResultEvent(use.tool_name, block.content, block.is_error)
+
+            # ── 4b. Layer 1：超大结果落盘 + 预览 ──
+            if self._tool_results_dir is not None:
+                results = budget_tool_results(
+                    results,
+                    session_dir=self._tool_results_dir,
+                    state=self._tool_budget_state,
+                )
 
             # ── 5. Observation 写回对话 → 回到步骤 1，LLM 据此决定下一步 ──
             self.conversation.add_tool_results(results)

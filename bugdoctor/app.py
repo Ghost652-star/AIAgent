@@ -180,6 +180,8 @@ async def run_app(
         compact_client=compact_client,
         compact_threshold=config.compact_threshold,
         skill_manager=skill_manager,
+        session_id=active_session_id,
+        data_root=data_root,
     )
 
     if full_history:

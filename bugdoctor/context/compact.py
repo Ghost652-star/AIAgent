@@ -1,7 +1,7 @@
-"""Auto-compact — 对话摘要压缩（精简版 MewCode Layer 2）
+"""Layer 2 — 对话摘要压缩（MewCode 精简版）
 
 触发 → 保留尾部 K 轮原文 → LLM 摘前缀 → 重建 history。
-不做 token 锚点、不落盘工具结果、不恢复附件。
+Layer 1 超大工具结果落盘见 context/tool_budget.py。
 """
 
 from __future__ import annotations
